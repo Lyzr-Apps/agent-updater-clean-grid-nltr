@@ -1,0 +1,65 @@
+{
+  "workflow": {
+    "nodes": [
+      {
+        "id": "input_node",
+        "type": "Input",
+        "label": "Scheduled Trigger / Generate Now",
+        "nodeCategory": "input"
+      },
+      {
+        "id": "ai_tools_research_agent",
+        "type": "Agent",
+        "label": "AI Tools Research Agent",
+        "nodeCategory": "agent"
+      },
+      {
+        "id": "output_node",
+        "type": "Output",
+        "label": "Daily Digest Output",
+        "nodeCategory": "end"
+      }
+    ],
+    "edges": [
+      {
+        "source": "input_node",
+        "target": "ai_tools_research_agent"
+      },
+      {
+        "source": "ai_tools_research_agent",
+        "target": "output_node"
+      }
+    ]
+  },
+  "agents": [
+    {
+      "node_id": "ai_tools_research_agent",
+      "agent_id": "69996db3771423cce61cd169",
+      "name": "AI Tools Research Agent",
+      "description": "Searches the web for the latest AI tool releases, updates, and news across categories (Productivity & Workflow, Creative & Design, Development & Coding, Business & Analytics, Research & Learning). Compiles a structured categorized daily digest.",
+      "agent_role": "AI Tools Researcher and Digest Curator",
+      "agent_goal": "Search the web for the latest AI tool releases, updates, and noteworthy tools across categories (Productivity & Workflow, Creative & Design, Development & Coding, Business & Analytics, Research & Learning), and compile a structured, categorized daily digest.",
+      "provider_id": "perplexity",
+      "model": "sonar-pro",
+      "temperature": 0.3,
+      "top_p": 1,
+      "tool_configs": [],
+      "managed_agents": [],
+      "image_output_config": null,
+      "voice_config": null,
+      "file_output": false
+    }
+  ],
+  "schedules": [
+    {
+      "schedule_id": "69996db9399dfadeac37e3e6",
+      "agent_id": "69996db3771423cce61cd169",
+      "cron_expression": "30 14 * * *",
+      "timezone": "America/New_York",
+      "message": "Search the web for the latest AI tool releases, updates, and noteworthy tools from today. Cover all categories: Productivity & Workflow, Creative & Design, Development & Coding, Business & Analytics, Research & Learning. Compile a comprehensive categorized digest.",
+      "is_active": true,
+      "max_retries": 2,
+      "retry_delay": 300
+    }
+  ]
+}

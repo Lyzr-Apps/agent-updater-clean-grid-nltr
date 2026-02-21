@@ -1,0 +1,52 @@
+{
+  "agent_name": "AI Tools Research Agent",
+  "agent_id": "69996db3771423cce61cd169",
+  "description": "Searches the web for the latest AI tool releases, updates, and news across categories (Productivity & Workflow, Creative & Design, Development & Coding, Business & Analytics, Research & Learning). Compiles a structured categorized daily digest.",
+  "agent_type": "json",
+  "accessor": "result",
+  "auto_generated": true,
+  "response_schema": {
+    "digest_date": "string",
+    "categories": [
+      {
+        "category_name": "string",
+        "tools": [
+          {
+            "name": "string",
+            "description": "string",
+            "url": "string",
+            "is_new": "boolean"
+          }
+        ]
+      }
+    ],
+    "total_tools_found": "number",
+    "summary": "string"
+  },
+  "example_response": {
+    "digest_date": "The date of the digest in YYYY-MM-DD format",
+    "categories": [
+      {
+        "category_name": "Name of the category",
+        "tools": [
+          {
+            "name": "Name of the AI tool",
+            "description": "One-line description of the tool",
+            "url": "URL to learn more about the tool",
+            "is_new": false
+          }
+        ]
+      }
+    ],
+    "total_tools_found": 0,
+    "summary": "A brief 2-3 sentence summary of today's key highlights"
+  },
+  "has_module_outputs": true,
+  "module_outputs_example": {
+    "artifact_files": [
+      {
+        "file_url": "https://example.com/image.png"
+      }
+    ]
+  }
+}
