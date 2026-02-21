@@ -1347,22 +1347,74 @@ export default function Page() {
         setActiveAgentId(null)
         return
       }
-      const message = `Search the web for the latest AI tool releases, updates, and noteworthy tools from today. Cover these categories: ${enabledCategories.join(', ')}. Compile a comprehensive categorized digest with tool name, description, URL, and whether each is a new release or update.`
+      const todayStr = new Date().toISOString().slice(0, 10)
+      const message = `TODAY IS ${todayStr}. Search the LIVE web RIGHT NOW for the very latest AI tool releases, product launches, updates, and noteworthy tools from today (${todayStr}) and the past 24-48 hours. You MUST perform real-time web searches — do NOT use cached or training data. Check Product Hunt, TechCrunch, The Verge, Hacker News, and AI blogs for today's launches. Cover these categories: ${enabledCategories.join(', ')}. Return a structured JSON digest with digest_date, categories (each with category_name and tools array), total_tools_found, and summary. Each tool needs: name, description, url, is_new (boolean). Aim for 10-15 total tools.`
       const result = await callAIAgent(message, AGENT_ID)
       if (result.success) {
-        const data = result?.response?.result as Record<string, unknown> | undefined
+        // Try multiple paths to extract data — agent may return at different nesting levels
+        let data: Record<string, unknown> | undefined
+        const r = result?.response
+        if (r?.result && typeof r.result === 'object' && !Array.isArray(r.result)) {
+          data = r.result as Record<string, unknown>
+        } else if (r && typeof r === 'object') {
+          // Check if result itself contains digest fields
+          const rAny = r as Record<string, unknown>
+          if (rAny.digest_date || rAny.categories) {
+            data = rAny
+          }
+        }
+        // If data is a string (sometimes agents return JSON as string), try parsing it
+        if (!data && r?.result && typeof r.result === 'string') {
+          try {
+            const parsed = JSON.parse(r.result)
+            if (parsed && typeof parsed === 'object') data = parsed
+          } catch {
+            // not parseable JSON string
+          }
+        }
+        // Also check result.response.message for stringified JSON
+        if (!data && r?.message && typeof r.message === 'string') {
+          try {
+            const parsed = JSON.parse(r.message)
+            if (parsed && typeof parsed === 'object' && (parsed.digest_date || parsed.categories)) {
+              data = parsed
+            }
+          } catch {
+            // not JSON
+          }
+        }
         if (data) {
+          const categories = Array.isArray(data.categories) ? (data.categories as Category[]) : []
+          // Sanitize categories — ensure each has tools array
+          const cleanCategories = categories
+            .filter((c): c is Category => c != null && typeof c === 'object' && typeof c.category_name === 'string')
+            .map((c) => ({
+              ...c,
+              tools: Array.isArray(c.tools) ? c.tools.filter((t): t is Tool => t != null && typeof t === 'object' && typeof t.name === 'string') : [],
+            }))
+            .filter((c) => c.tools.length > 0)
+          const totalTools = cleanCategories.reduce((sum, c) => sum + c.tools.length, 0)
           const digestData: DigestData = {
-            digest_date: (data.digest_date as string) ?? new Date().toISOString().slice(0, 10),
-            categories: Array.isArray(data.categories) ? (data.categories as Category[]) : [],
-            total_tools_found: (data.total_tools_found as number) ?? 0,
+            digest_date: (data.digest_date as string) ?? todayStr,
+            categories: cleanCategories,
+            total_tools_found: typeof data.total_tools_found === 'number' ? data.total_tools_found : totalTools,
             summary: (data.summary as string) ?? '',
           }
-          setDigest(digestData)
-          const updatedHistory = addToHistory(digestData)
-          setHistory(updatedHistory)
+          if (cleanCategories.length === 0) {
+            setError('Agent returned a response but no tools were found. The agent may not have found recent AI tool news. Try again in a few moments.')
+          } else {
+            setDigest(digestData)
+            const updatedHistory = addToHistory(digestData)
+            setHistory(updatedHistory)
+          }
         } else {
-          setError('Agent returned an empty response. Please try again.')
+          // Last resort: check if there's a text message we can show
+          const fallbackMsg = r?.message ?? r?.result
+          setError(
+            typeof fallbackMsg === 'string' && fallbackMsg.length > 0
+              ? `Agent returned unstructured response: ${fallbackMsg.slice(0, 200)}`
+              : 'Agent returned an empty or unrecognized response. Please try again.'
+          )
         }
       } else {
         setError(result?.error ?? 'Unknown error occurred. Please try again.')
